@@ -36,7 +36,7 @@ def get_aur_helper_command(action, package=None):
             elif action == 'remove':
                 return tool_name, remove_cmd
 
-    return None, None 
+    return None, None
 
 def run_command_and_get_output(cmd_list):
     """Runs a command and returns a tuple (success_exit_code, raw_output_string)."""
@@ -255,7 +255,14 @@ def _do_install_or_remove(package, target, action):
             elif container_name.startswith('amo-alpine'):
                 commands[target] = ('distrobox', ['distrobox-enter', container_name, '--', 'sudo', 'apk', 'add', package])
             else: # Fallback for other distrobox containers or if prefix doesn't match
-                commands[target] = ('distrobox', ['distrobox-enter', container_name, '--', 'sudo', 'apt', 'install', '-y', package])
+                # Default to apt for unknown distrobox containers, but also export it
+                # This ensures that GUI applications installed in any amo-managed distrobox
+                # container are automatically exported to the host's app menu.
+                commands[target] = ('distrobox', ['distrobox-enter', container_name, '--', 'sudo', 'apt', 'install', '-y', package, '&&', 'distrobox-export', '--app', package])
+        # Add a generic distrobox install command for non-amo containers, but still export
+        elif target.startswith('distrobox-'):
+            container_name = target.split('distrobox-')[1]
+            commands[target] = ('distrobox', ['distrobox-enter', container_name, '--', 'sudo', 'apt', 'install', '-y', package])
     else: # action == 'remove'
         commands = {
             'flatpak': ('flatpak', ['flatpak', 'remove', '-y', package]),
@@ -274,8 +281,8 @@ def _do_install_or_remove(package, target, action):
             elif container_name.startswith('amo-alpine'):
                 commands[target] = ('distrobox', ['distrobox-enter', container_name, '--', 'sudo', 'apk', 'del', package])
             else: # Fallback for other distrobox containers or if prefix doesn't match
-                # Default to apt for unknown distrobox containers
-                commands[target] = ('distrobox', ['distrobox-enter', container_name, '--', 'sudo', 'apt', 'remove', '-y', package])
+                # Default to apt for unknown distrobox containers, and also unexport it
+                commands[target] = ('distrobox', ['distrobox-enter', container_name, '--', 'sudo', 'apt', 'remove', '-y', package, '&&', 'distrobox-export', '--delete', '--app', package])
 
     # Handle AUR helper detection
     if target == 'aur':
