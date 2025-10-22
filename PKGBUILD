@@ -15,10 +15,21 @@ source=("git+https://github.com/franiekidos/amo.git")
 sha256sums=(SKIP)
 
 build() {
-    cd $srcdir
-    sh ./compile.sh
+    cd $srcdir/amo
+    pyinstaller \
+    --onefile \
+    --name "amo" \
+    --clean \
+    --noconsole \
+    "amo"
+
+    BUILD_STATUS=$?
+    if [ $BUILD_STATUS -ne 0 ]; then
+        echo ":: ERROR: PyInstaller failed to create the executable."
+        exit 1
+    fi
 }
 
 package() {
-    install -Dm755 $srcdir/amo-dist/amo ${pkgdir}/usr/bin/amo
+   install -Dm755 $srcdir/amo/dist/amo ${pkgdir}/usr/bin/amo
 }

@@ -30,14 +30,6 @@ fi
 # --add-data: GTK4/LibAdwaita apps often need special hooks or data files. 
 #             PyInstaller is usually smart enough, but complex apps may need this.
 
-pyinstaller \
-    --onefile \
-    --name "$EXECUTABLE_NAME" \
-    --clean \
-    --noconsole \
-    "$PYTHON_SCRIPT"
-
-BUILD_STATUS=$?
 
 if [ $BUILD_STATUS -ne 0 ]; then
     echo ":: ERROR: PyInstaller failed to create the executable."

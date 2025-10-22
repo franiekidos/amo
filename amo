@@ -247,7 +247,15 @@ def _do_install_or_remove(package, target, action):
         # Add distrobox install command
         if target.startswith('distrobox-'):
             container_name = target.split('distrobox-')[1]
-            commands[target] = ('distrobox', ['distrobox-enter', container_name, '--', 'sudo', 'apt', 'install', '-y', package]) # Example for Debian/Ubuntu
+            # Determine package manager based on container name prefix
+            if container_name.startswith('amo-debian') or container_name.startswith('amo-ubuntu'):
+                commands[target] = ('distrobox', ['distrobox-enter', container_name, '--', 'sudo', 'apt', 'install', '-y', package])
+            elif container_name.startswith('amo-fedora'):
+                commands[target] = ('distrobox', ['distrobox-enter', container_name, '--', 'sudo', 'dnf', 'install', '-y', package])
+            elif container_name.startswith('amo-alpine'):
+                commands[target] = ('distrobox', ['distrobox-enter', container_name, '--', 'sudo', 'apk', 'add', package])
+            else: # Fallback for other distrobox containers or if prefix doesn't match
+                commands[target] = ('distrobox', ['distrobox-enter', container_name, '--', 'sudo', 'apt', 'install', '-y', package])
     else: # action == 'remove'
         commands = {
             'flatpak': ('flatpak', ['flatpak', 'remove', '-y', package]),
@@ -349,7 +357,7 @@ def handle_install(args):
                 elif container_name.startswith('amo-alpine'):
                     tool_name, cmd_list = ('distrobox', ['distrobox-enter', container_name, '--', 'apk', 'search', package])
                 else:
-                    # Default to apt for unknown distrobox containers
+                # Default to apt for unknown distrobox containers or if prefix doesn't match
                     tool_name, cmd_list = ('distrobox', ['distrobox-enter', container_name, '--', 'apt', 'search', package])
             else:
                 continue 
